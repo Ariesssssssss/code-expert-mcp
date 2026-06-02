@@ -246,6 +246,7 @@ def send_notification(method, params):
 
 
 def main():
+    # 先发 initialized 通知
     send_notification("initialized", {
         "protocolVersion": PROTOCOL_VERSION,
         "capabilities":   {"tools": {}},
@@ -265,7 +266,15 @@ def main():
         req_id = msg.get("id")
         params = msg.get("params", {})
 
-        if method == "tools/list":
+        # Cursor/Cline 等客户端第一步发 initialize 请求
+        if method == "initialize":
+            send_response(req_id, {
+                "protocolVersion": PROTOCOL_VERSION,
+                "capabilities":   {"tools": {}},
+                "serverInfo":    {"name": SERVER_NAME, "version": SERVER_VERSION},
+            })
+
+        elif method == "tools/list":
             send_response(req_id, {"tools": TOOLS})
 
         elif method == "tools/call":
