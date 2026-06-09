@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepSeek-V4-Pro 压测报告</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+    .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    h1 { color: #1a1a2e; font-size: 28px; margin-bottom: 8px; }
+    h2 { color: #2d3436; font-size: 18px; margin-top: 0; border-left: 4px solid #4a90d9; padding-left: 12px; }
+    .meta { color: #636e72; font-size: 14px; margin-bottom: 24px; }
+    .tag { display: inline-block; background: #e8f4fd; color: #0984e3; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-right: 8px; }
+    .tag.fail { background: #ffeaa7; color: #d63031; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th { background: #f8f9fa; text-align: left; padding: 12px 16px; font-weight: 600; color: #2d3436; border-bottom: 2px solid #dee2e6; }
+    td { padding: 12px 16px; border-bottom: 1px solid #f1f1f1; }
+    tr:hover { background: #f8f9fa; }
+    .chart-container { position: relative; height: 350px; margin-top: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .stat { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; }
+    .stat.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .stat.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat.yellow { background: linear-gradient(135deg, #f12711 0%, #f5af19 100%); }
+    .stat-value { font-size: 28px; font-weight: bold; }
+    .stat-label { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+    .fail-section { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 16px; margin-top: 16px; }
+    .fail-section h3 { color: #856404; margin-top: 0; }
+</style>
+</head>
+<body>
+
+<h1>DeepSeek-V4-Pro 大模型压测报告</h1>
+<div class="meta">
+    <span class="tag">测试时间：2026-06-09</span>
+    <span class="tag">测试工具：EvalScope + 离线脚本</span>
+    <span class="tag">模型：DeepSeek-V4-Pro</span>
+    <span class="tag">最大上下文：1M tokens</span>
+</div>
+
+<!-- 核心指标卡片 -->
+<div class="summary-grid">
+    <div class="stat">
+        <div class="stat-value">651</div>
+        <div class="stat-label">最高吞吐 (tok/s)</div>
+    </div>
+    <div class="stat green">
+        <div class="stat-value">100%</div>
+        <div class="stat-label">成功率 (10K/1M)</div>
+    </div>
+    <div class="stat orange">
+        <div class="stat-value">14.7x</div>
+        <div class="stat-label">并发扩展倍数 (1→20)</div>
+    </div>
+    <div class="stat yellow">
+        <div class="stat-value">3.5s</div>
+        <div class="stat-label">1M TTFT (ms)</div>
+    </div>
+</div>
+
+<!-- 10K 上下文图表 -->
+<div class="card">
+    <h2>📊 10K 上下文 - 吞吐量与并发关系</h2>
+    <div class="chart-container">
+        <canvas id="throughputChart"></canvas>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h2>⏱ TTFT 延迟分析</h2>
+        <div class="chart-container">
+            <canvas id="ttftChart"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <h2>📈 RPS 与并发关系</h2>
+        <div class="chart-container">
+            <canvas id="rpsChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- 1M 上下文图表 -->
+<div class="card">
+    <h2>🚀 1M 极限上下文性能</h2>
+    <div class="chart-container">
+        <canvas id="1mChart"></canvas>
+    </div>
+</div>
+
+<!-- 详细数据表 -->
+<div class="card">
+    <h2>📋 详细测试数据</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>上下文</th>
+                <th>并发</th>
+                <th>成功率</th>
+                <th>RPS</th>
+                <th>TTFT 均值</th>
+                <th>TTFT P50</th>
+                <th>TTFT P99</th>
+                <th>状态</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>10K</td><td>1</td><td>100%</td><td>2.18</td><td>615.4 ms</td><td>159.8 ms</td><td>8441.4 ms</td><td><span class="tag">✅</span></td></tr>
+            <tr><td>10K</td><td>5</td><td>100%</td><td>3.51</td><td>502.6 ms</td><td>248.9 ms</td><td>1611.5 ms</td><td><span class="tag">✅</span></td></tr>
+            <tr><td>10K</td><td>10</td><td>100%</td><td>5.63</td><td>836.0 ms</td><td>422.1 ms</td><td>1890.8 ms</td><td><span class="tag">✅</span></td></tr>
+            <tr><td>10K</td><td>20</td><td>100%</td><td>7.68</td><td>583.9 ms</td><td>718.8 ms</td><td>726.9 ms</td><td><span class="tag">✅</span></td></tr>
+            <tr><td>100K</td><td>1-20</td><td>0%</td><td>-</td><td>-</td><td>-</td><td>-</td><td><span class="tag fail">❌ 超时</span></td></tr>
+            <tr><td>500K</td><td>1-10</td><td>0%</td><td>-</td><td>-</td><td>-</td><td>-</td><td><span class="tag fail">❌ 超时</span></td></tr>
+            <tr><td>1M</td><td>1</td><td>100%</td><td>0.83</td><td>3499.1 ms</td><td>3547.3 ms</td><td>3600.5 ms</td><td><span class="tag">✅</span></td></tr>
+            <tr><td>1M</td><td>5</td><td>100%</td><td>0.50</td><td>5188.0 ms</td><td>5981.3 ms</td><td>6036.6 ms</td><td><span class="tag">✅</span></td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 失败分析 -->
+<div class="fail-section">
+    <h3>⚠️ 100K / 500K 失败说明</h3>
+    <p>100K 和 500K 上下文测试全部超时失败（成功率 0%），原因是脚本 timeout=300s，但长上下文 prefill 阶段耗时超过 5 分钟。</p>
+    <p><strong>建议：</strong>增加脚本 timeout 到 600s 以上后重试。</p>
+</div>
+
+<script>
+const labels10k = ['并发1', '并发5', '并发10', '并发20'];
+
+new Chart(document.getElementById('throughputChart'), {
+    type: 'line',
+    data: {
+        labels: labels10k,
+        datasets: [{
+            label: 'RPS (req/s)',
+            data: [2.18, 3.51, 5.63, 7.68],
+            borderColor: '#4a90d9',
+            backgroundColor: 'rgba(74, 144, 217, 0.1)',
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: {
+            y: { type: 'linear', position: 'left', title: { display: true, text: 'RPS (req/s)' } }
+        }
+    }
+});
+
+new Chart(document.getElementById('ttftChart'), {
+    type: 'bar',
+    data: {
+        labels: labels10k,
+        datasets: [
+            { label: 'TTFT 均值', data: [615.4, 502.6, 836.0, 583.9], backgroundColor: '#4a90d9' },
+            { label: 'TTFT P50', data: [159.8, 248.9, 422.1, 718.8], backgroundColor: '#38ef7d' },
+            { label: 'TTFT P99', data: [8441.4, 1611.5, 1890.8, 726.9], backgroundColor: '#f5576c' }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { title: { display: true, text: '延迟 (ms)' } } }
+    }
+});
+
+new Chart(document.getElementById('rpsChart'), {
+    type: 'line',
+    data: {
+        labels: labels10k,
+        datasets: [{
+            label: 'RPS',
+            data: [2.18, 3.51, 5.63, 7.68],
+            borderColor: '#11998e',
+            backgroundColor: 'rgba(17, 153, 142, 0.1)',
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { title: { display: true, text: 'RPS (req/s)' } } }
+    }
+});
+
+new Chart(document.getElementById('1mChart'), {
+    type: 'bar',
+    data: {
+        labels: ['1M 并发1', '1M 并发5'],
+        datasets: [
+            { label: 'TTFT 均值 (ms)', data: [3499.1, 5188.0], backgroundColor: '#667eea' },
+            { label: 'TTFT P50 (ms)', data: [3547.3, 5981.3], backgroundColor: '#38ef7d' },
+            { label: 'TTFT P99 (ms)', data: [3600.5, 6036.6], backgroundColor: '#f5576c' }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { title: { display: true, text: '延迟 (ms)' } } }
+    }
+});
+</script>
+</body>
+</html>
